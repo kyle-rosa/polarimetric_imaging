@@ -1,0 +1,17 @@
+name: polarimetric_imaging
+channels:
+  - conda-forge
+  - nvidia
+  - pytorch-nightly
+dependencies:
+  - python=3.11
+  - nvidia::cudatoolkit=11.7
+  - pytorch=2.1
+  - pytorch-cuda=11.7
+  - opencv=4.7.0
+  - numpy
+  - pandas
+  - tqdm
+  - pip
+  - pip:
+    - arena-api/arena_api-2.3.3-py3-none-any.whl
