@@ -53,7 +53,7 @@ def run_camera(
     device.tl_stream_nodemap.get_node('StreamPacketResendEnable').value = True
     device.tl_stream_nodemap.get_node('StreamAutoNegotiatePacketSize').value = True
 
-    device.nodemap.get_node('PixelFormat').value = f"PolarizeMono{bit_depth}"
+    device.nodemap.get_node('PixelFormat').value = f"Mono{bit_depth}"
     device.nodemap.get_node('DeviceLinkThroughputReserve').value = throughput_reserve
 
     device.nodemap.get_node('OffsetX').value = 0
@@ -109,21 +109,6 @@ def get_image_buffers(
 
 
 
-def to_numpy_byte_image(
-    tensor_image
-) -> np.ndarray:
-    """
-    Converts a torch tensor image to a numpy uint8 array.
-
-    Args:
-        tensor_image (torch.Tensor): A torch tensor of shape (batch_size, num_channels, height, width).
-
-    Returns:
-        np.ndarray: A numpy uint8 array of shape (batch_size, height, width, num_channels).
-    """
-    return tensor_image.multiply(256).floor().clamp(0, 255).to(torch.uint8).to('cpu').numpy()
-
-
 def make_display_manager(
     frame_rate: float, 
     buffer_width: int,
@@ -132,18 +117,7 @@ def make_display_manager(
     window_height: int,
     output_dir: (str | os.PathLike)
 ) -> None:
-    """
-    Coroutine that creates a window for displaying and saving videos. 
-    It receives a stream of images as input, which it displays on the window and writes to disk. 
-    
-    Args:
-        window_width (int): The width of the display window.
-        window_height (int): The height of the display window.
-    
-    Yields:
-        None
-    """
-    windows = {'L', 'ADoLP'}
+    windows = {'L', 'ADoLP', 'hsv'}
     video_writers = {}
     for window in windows:
         cv2.startWindowThread()
@@ -158,9 +132,9 @@ def make_display_manager(
             frameSize=(buffer_width, buffer_height)
         )
     while True:
-        tensor_images_dict = yield
-        for k in tensor_images_dict:
-            images = to_numpy_byte_image(tensor_images_dict[k][0].expand(-1, -1, 3))
+        visualisations = yield
+        for k in visualisations:
+            images = visualisations[k]
             if k in windows:
                 cv2.imshow(k, images[..., [2, 1, 0]])
             if k in video_writers:

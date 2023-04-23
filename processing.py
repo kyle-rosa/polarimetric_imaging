@@ -27,7 +27,6 @@ def diffuse_stokes_features(stokes, diffusion_kernel):
 
 
 def dequantize_frame(byte_frame, bit_depth=12):
-    # print(byte_frame.shape, byte_frame.dtype)
     byte_depth_constants = torch.tensor(2).pow(
         torch.arange(byte_frame.shape[-1]).multiply(8)
     ).to(byte_frame.device)
