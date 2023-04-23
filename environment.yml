@@ -1,15 +1,17 @@
 name: polarimetric_imaging
 channels:
-  - conda-forge
   - nvidia
-  - pytorch-nightly
+  - pytorch
+  - conda-forge
 dependencies:
-  - python=3.11
+  - python=3.10
   - nvidia::cudatoolkit=11.7
-  - pytorch=2.1
+  - pytorch
+  - torchvision
   - pytorch-cuda=11.7
   - opencv=4.7.0
   - numpy
+  - matplotlib
   - pandas
   - tqdm
   - pip

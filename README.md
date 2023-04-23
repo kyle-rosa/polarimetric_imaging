@@ -1,6 +1,8 @@
 # Polarimetric Imaging
 
 ![alt text](https://github.com/kyle-rosa/polarisation_imaging/blob/main/gallery/glasses.png?raw=true)
+![alt text](https://github.com/kyle-rosa/polarisation_imaging/blob/main/gallery/watergun.png?raw=true)
+![alt text](https://github.com/kyle-rosa/polarisation_imaging/blob/main/gallery/matchbox.png?raw=true)
 
 ## Overview
 Initialise camera stream and video writer, then loop:
