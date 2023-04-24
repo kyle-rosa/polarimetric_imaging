@@ -17,9 +17,6 @@ Initialise camera stream and video writer, then loop:
 
 ## Demosaicing and Interpolation
 1. Channel alignment and interpolation.
-### Unimplemented:
-2. (2, 2)-pooling.
-3. Variational demosaicing.
 
 ## Visualisation
 1. Angular (0, 45, 90, and 135 degrees) intensity.
@@ -27,8 +24,11 @@ Initialise camera stream and video writer, then loop:
 3. Linear polarisation (L = Q + iU) domain colouring.
 4. HSV-based Stokes colourmapping.
 
-
-
+# TODO
+- Replace generators with async coroutines.
+- Make compatible with torch.compile.
+- Detect and filter defective pixels.
+- Variational demosaicking.
 
 # Requirements
 ## Software:
