@@ -10,6 +10,32 @@ import processing
 import streaming
 import visualisation
 
+import pandas as pd 
+import torchvision
+
+
+def visualise_test_results(test_frames):
+    bin_counts = torch.bincount(test_frames.reshape(-1)).div(test_frames.size(0))
+    cumulative_pixels = bin_counts.flip(dims=[-1]).cumsum(dim=-1).flip(dims=[-1])
+
+    df = pd.DataFrame(
+        data=[it.cpu().numpy() for it in [bin_counts, cumulative_pixels]],
+        index=['counts', 'cumulative']
+    ).T
+    print(df.plot(logy=True).get_figure().savefig(str(output_dir / 'bin_counts.png')))
+
+    hot_pixel_img_dir = output_dir / 'hot_pixels'
+    os.makedirs(hot_pixel_img_dir, exist_ok=True)
+    
+    frames_float = test_frames.float().mean(dim=0)[0]
+
+    hot_pixel_dict = {}
+    for threshold in range(0, 256, 1):
+        hot_pixel_dict[threshold + 1] = frames_float.gt(threshold).nonzero().tolist()
+
+    # print(hot_pixel_dict)
+    torch.save(hot_pixel_dict, 'hot_pixel_indices.pt')
+
 
 def display_video_stream(
     # Camera settings:
@@ -18,6 +44,7 @@ def display_video_stream(
     pixels_width: int,
     pixels_height: int,
     bit_depth: int,
+
     throughput_reserve: int,
     # Display settings:
     window_width: int,
@@ -28,6 +55,8 @@ def display_video_stream(
     compute_device: torch.device,
     # Output settings:
     output_dir: (str | os.PathLike),
+    save_video=True,
+    save_frames=False
 ):
     os.makedirs(output_dir, exist_ok=True)
     cyclic_colour_map = visualisation.load_cyclic_colourmap(compute_device)
@@ -50,7 +79,7 @@ def display_video_stream(
     )
     videos_writer.send(None)
 
-    while True:
+    for _ in tqdm(range(10_000)):
         mosaic = frame_generator.send(None)
         mosaic_float = processing.dequantize_frame(mosaic)
         angles_tensor = processing.mosaic_to_aligned_demosaic(mosaic_float)
@@ -61,29 +90,30 @@ def display_video_stream(
         key = (cv2.waitKey(1) & 0xFF)
         if key == ord("q"):
             break
+
+        byte_depth_constants = torch.tensor(2).pow(
+            torch.arange((1 if (bit_depth==8) else 2)).multiply(8)
+        ).to(compute_device)
+
+        num_test_frames = 32
         if key == ord("e"):
+            # Begin Test
             timestamp = time.time()
-            long_exposure_buffer = torch.zeros(
-                (1, 1, buffer_height, buffer_width), 
-                dtype=torch.float,
-                device=compute_device
-            )
-            long_exposure_frames = 256
-            for _ in range(long_exposure_frames):
+            save_dir = output_dir / 'test_frames' 
+            os.makedirs(save_dir, exist_ok=True)
+            test_frames = []
+            for _ in range(num_test_frames):
                 mosaic = frame_generator.send(None)
-                mosaic_float = processing.dequantize_frame(mosaic)
-                mosaic_float = processing.resample_hot_pixels(mosaic_float)
-                long_exposure_buffer.add_(mosaic_float)
-            long_exposure_buffer = long_exposure_buffer.div(long_exposure_frames)
+                mosaic_long = mosaic.mul(byte_depth_constants).sum(dim=-1).subtract(1)
+                test_frames.append(mosaic_long)
+            test_frames = torch.cat(test_frames)
+            torch.save(test_frames, save_dir / str(timestamp))
+            visualise_test_results(test_frames)
+            
+            
 
-            angles_tensor = processing.mosaic_to_aligned_demosaic(long_exposure_buffer)
-            (angles_dict, stokes_dict) = processing.angles_to_stokes(angles_tensor)
-            visualisations = visualisation.visualise_polarisation(angles_dict, stokes_dict, cyclic_colour_map, gamma)
 
-            save_dir = output_dir / f'{str(timestamp)}' 
-            for key in visualisations:
-                os.makedirs(save_dir, exist_ok=True)
-                cv2.imwrite(str(save_dir / f'{key}.png'), visualisations[key][..., [2, 1, 0]])
+            
 
 
 if __name__ == '__main__':
@@ -91,7 +121,7 @@ if __name__ == '__main__':
 
     # Camera settings:
     frame_rate = 10.0
-    exposure_time = (990_000.0 / frame_rate)
+    exposure_time = 990_000.0 / frame_rate
     pixels_width = 2448
     pixels_height = 2048
     bit_depth = 12
@@ -107,7 +137,9 @@ if __name__ == '__main__':
     compute_device = 'cuda'
 
     # Output settings:
-    output_dir = (Path() / f"data/output")
+    output_dir = Path() / "data/tests"
+    save_video = False
+    save_frames = False
 
 
     display_video_stream(
@@ -123,4 +155,6 @@ if __name__ == '__main__':
         gamma=gamma,
         compute_device=compute_device,
         output_dir=output_dir,
+        save_video=save_video,
+        save_frames=save_frames
     )

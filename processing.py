@@ -1,7 +1,8 @@
 import math
 import torch
 import torch.nn.functional as F
-
+from itertools import product
+from pathlib import Path
 
 def make_diffusion_kernel(width, height, time):
     return torch.stack(
@@ -30,9 +31,21 @@ def dequantize_frame(byte_frame, bit_depth=12):
     byte_depth_constants = torch.tensor(2).pow(
         torch.arange(byte_frame.shape[-1]).multiply(8)
     ).to(byte_frame.device)
-    quantized_frame = byte_frame.long().multiply(byte_depth_constants).sum(dim=-1)
-    dequantized_frame = quantized_frame.add(0.5).div(2**bit_depth)
+    quantized_frame = byte_frame.long().multiply(byte_depth_constants).sum(dim=-1)#.sub(1).float()
+    dequantized_frame = quantized_frame.sub(1).div(2**bit_depth - 1)
     return dequantized_frame
+
+
+hot_pixel_index = torch.tensor(torch.load(
+    str(Path() / 'hot_pixel_indices.pt')
+)[11]).cuda()
+offsets = torch.tensor(list(product([-2, 2], [-2, 2]))).cuda()
+
+def resample_hot_pixels(mosaic_float):
+    nbds = hot_pixel_index[..., None, :].add(offsets)
+    resample_values = mosaic_float[..., nbds[..., -2], nbds[..., -1]].mean(dim=-1)
+    mosaic_float[..., hot_pixel_index[..., -2], hot_pixel_index[..., -1]] = resample_values
+    return mosaic_float
 
 
 def mosaic_to_aligned_demosaic(mosaic):

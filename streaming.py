@@ -15,25 +15,6 @@ def select_device_from_user_input(
 ):
     device_infos = arena_api.system.system.device_infos
     print('Camera device information:\n', pd.DataFrame(device_infos))
-    while selected_index is None:
-        device_infos = arena_api.system.system.device_infos
-        if len(device_infos) == 0:
-            print("No camera connected\nPress enter to search again")
-            input()
-            continue
-        print("Devices found:")
-        for i in range(len(device_infos)):
-            print(f"\t{i}. {device_infos[i]['model']} SN: {device_infos[i]['serial']}")
-        while True:
-            line = input("Selection: ")
-            try:
-                selected_index = int(line)
-                if 0 <= selected_index < len(device_infos):
-                    break
-                else:
-                    print(f"Please enter a valid number between 0 and {len(device_infos)-1}\n")
-            except Exception:
-                print("\nPlease enter a valid number\n")
     selected_model = device_infos[selected_index]['model']
     print(f"\nCreate device: {selected_model}...")
     device = arena_api.system.system.create_device(device_infos=device_infos[selected_index])[0]
@@ -117,7 +98,7 @@ def make_display_manager(
     window_height: int,
     output_dir: (str | os.PathLike)
 ) -> None:
-    windows = {'L', 'ADoLP', 'hsv'}
+    windows = {'L', 'ADoLP', 'HSV'}
     video_writers = {}
     for window in windows:
         cv2.startWindowThread()

@@ -48,29 +48,46 @@ def to_numpy_byte_image(
 
 def visualise_polarisation(
     angles_dict: dict[str, Tensor],
-    stokes_dict: dict[str, Tensor],
+    stokes: dict[str, Tensor],
     cyclic_colourmap: Tensor,
     gamma: float
 ):
+    # Calculate (real-valued) scalar fields, with ranges in [0, 1].
     scalar_fields = {
         **angles_dict,
-        'I': stokes_dict['I'].div(2),
-        'Q': stokes_dict['Q'].add(1).div(2),
-        'U': stokes_dict['U'].add(1).div(2),
-        'IoPL': stokes_dict['L'].abs(),
-    }
-    scalar_fields = {
-        **scalar_fields,
-        'IoUL': stokes_dict['I'].pow(2).sub(scalar_fields['IoPL'].pow(2)).pow(1 / 2),
-        'DoLP': scalar_fields['IoPL'].div(stokes_dict['I'].add(1e-8)),
+        'Stokes I': stokes['I'].div(2),
+        'Stokes Q': stokes['Q'].add(1).div(2),
+        'Stokes U': stokes['U'].add(1).div(2),
+        'Intensity of Polarised Light': stokes['L'].abs(),
+        'Intensity of Unpolarised Light': stokes['I'].pow(2).sub(stokes['L'].abs().pow(2)).clamp(0).pow(1 / 2),
+        'Degree of Linear Polarisation': stokes['L'].abs().div(stokes['I'].add(1e-8))
     }
     scalar_colourings = {
-        k: scalar_fields[k].pow(gamma)[..., None].expand(-1, -1, -1, 3)
-        for k in scalar_fields
+        k: (
+            scalar_field.sub(scalar_field.min())
+            .div(scalar_field.max().sub(scalar_field.min()))
+            .pow(gamma)[..., None]
+            .expand(-1, -1, -1, 3)
+        )
+        for (k, scalar_field) in scalar_fields.items()
     }
+    scalar_colourings = {
+        **scalar_colourings,
+        **{
+            f'Stokes {k}': (
+                (normalised_field := stokes[k].div((stokes['Q'].pow(2) + stokes['U'].pow(2)).pow(1/2)))
+                .sub(normalised_field.min())
+                .div(normalised_field.max().sub(normalised_field.min()))
+                .pow(gamma)[..., None]
+                .expand(-1, -1, -1, 3)
+            )
+            for k in ['Q', 'U']
+        }
+    }
+
     complex_fields = {
-        'L': stokes_dict['L'],
-        'ADoLP': stokes_dict['L'].div(stokes_dict['I']),
+        'L': stokes['L'],
+        'ADoLP': stokes['L'].div(stokes['I'].add(1e-8)),
     }
     domain_colourings = {
         k: make_domain_colouring(
@@ -79,16 +96,29 @@ def visualise_polarisation(
             gamma=gamma,
         ) for (k, v) in complex_fields.items()
     }
+
+    phase = torch.atan2(stokes['U'], stokes['Q']).div(math.tau).add(1 / 2)
+    phase_idx = phase.mul(len(cyclic_colourmap)).floor().clamp(0, len(cyclic_colourmap)-1).long()
+    hsv_colourings = {
+        'HSV': (
+            cyclic_colourmap[phase_idx, :]
+            .mul(scalar_fields['Degree of Linear Polarisation'][..., None]) 
+            .add(1 - scalar_fields['Degree of Linear Polarisation'][..., None])
+            .mul(scalar_fields['Stokes I'].pow(gamma)[..., None])
+        ),
+        'HSV-DoLP': (
+            cyclic_colourmap[phase_idx, :]
+            .mul(scalar_fields['Degree of Linear Polarisation'][..., None]) 
+            .add(
+                scalar_fields['Stokes I'].pow(gamma)
+                .mul(1 - scalar_fields['Degree of Linear Polarisation'])[..., None]
+            )
+        ),
+    }
     visualisations = {
         **scalar_colourings, 
         **domain_colourings, 
+        **hsv_colourings
     }
-    angle = torch.atan2(stokes_dict['U'], stokes_dict['Q']).div(math.tau).add(1 / 2)
-    angle = angle.mul(len(cyclic_colourmap)).floor().clamp(0, len(cyclic_colourmap)-1).long()
-    intensity = scalar_fields['I']
-    dolp = scalar_fields['DoLP']
-    visualisations['hsv'] = (
-        (cyclic_colourmap[angle, :] * dolp[..., None]) 
-        + (intensity * (1 - dolp))[..., None]
-    )
     return {k: to_numpy_byte_image(v[0].expand(-1, -1, 3)) for (k, v) in visualisations.items()}
+
