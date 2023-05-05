@@ -10,8 +10,7 @@ import processing
 import streaming
 import visualisation
 
-import pandas as pd 
-import torchvision
+import pandas as pd
 
 
 def visualise_test_results(test_frames):
@@ -22,7 +21,7 @@ def visualise_test_results(test_frames):
         data=[it.cpu().numpy() for it in [bin_counts, cumulative_pixels]],
         index=['counts', 'cumulative']
     ).T
-    print(df.plot(logy=True).get_figure().savefig(str(output_dir / 'bin_counts.png')))
+    df.plot(logy=True).get_figure().savefig(str(output_dir / 'bin_counts.png'))
 
     hot_pixel_img_dir = output_dir / 'hot_pixels'
     os.makedirs(hot_pixel_img_dir, exist_ok=True)
@@ -84,7 +83,9 @@ def display_video_stream(
         mosaic_float = processing.dequantize_frame(mosaic)
         angles_tensor = processing.mosaic_to_aligned_demosaic(mosaic_float)
         (angles_dict, stokes_dict) = processing.angles_to_stokes(angles_tensor)
-        visualisations = visualisation.visualise_polarisation(angles_dict, stokes_dict, cyclic_colour_map, gamma)
+        visualisations = visualisation.visualise_polarisation(
+            angles_dict, stokes_dict, cyclic_colour_map, gamma
+        )
         videos_writer.send(visualisations)
 
         key = (cv2.waitKey(1) & 0xFF)
@@ -117,7 +118,7 @@ def display_video_stream(
 
 
 if __name__ == '__main__':
-    print(f'Running PyTorch {torch.__version__} with CUDA Toolkit {torch.version.cuda}...')
+    print(f'PyTorch {torch.__version__} | CUDA Toolkit {torch.version.cuda}')
 
     # Camera settings:
     frame_rate = 10.0

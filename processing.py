@@ -4,7 +4,7 @@ import torch.nn.functional as F
 from itertools import product
 from pathlib import Path
 
-def make_diffusion_kernel(width, height, time):
+def make_diffusion_multiplier(width, height, time):
     return torch.stack(
         torch.meshgrid(
             [
@@ -12,27 +12,39 @@ def make_diffusion_kernel(width, height, time):
                 torch.fft.fftfreq(height).pow(2)
             ], indexing='xy'
         ), dim=-1
-    ).sum(dim=-1).multiply(time).multiply(-4*math.pi**2).add(1).pow(1/2)
+    ).sum(dim=-1).multiply(time).multiply(-math.tau**2).exp()
 
 
-def diffuse_stokes_features(stokes, diffusion_kernel):
-    diffused_stokes = {
-        key: torch.fft.ifftn(
-            torch.fft.fftn(value, dim=[-2, -1]).multiply(diffusion_kernel),
-            dim=[-2, -1]
-        )
-        for (key, value) in stokes.items()
-    }
-    diffused_stokes['I'] = diffused_stokes['I'].real
-    return diffused_stokes
+def apply_real_diffusion(image, diffusion_multiplier):
+    return torch.fft.ifftn(
+        torch.fft.fftn(image, dim=[-2, -1]).mul(diffusion_multiplier),
+        dim=[-2, -1]
+    ).real
+
+def apply_complex_diffusion(image, diffusion_multiplier):
+    return torch.fft.ifftn(
+        torch.fft.fftn(image, dim=[-2, -1]).mul(diffusion_multiplier),
+        dim=[-2, -1]
+    )
+
+# def diffuse_stokes_features(stokes, diffusion_kernel):
+#     diffused_stokes = {
+#         key: torch.fft.ifftn(
+#             torch.fft.fftn(value, dim=[-2, -1]).multiply(diffusion_kernel),
+#             dim=[-2, -1]
+#         )
+#         for (key, value) in stokes.items()
+#     }
+#     diffused_stokes['I'] = diffused_stokes['I'].real
+#     return diffused_stokes
 
 
 def dequantize_frame(byte_frame, bit_depth=12):
     byte_depth_constants = torch.tensor(2).pow(
         torch.arange(byte_frame.shape[-1]).multiply(8)
     ).to(byte_frame.device)
-    quantized_frame = byte_frame.long().multiply(byte_depth_constants).sum(dim=-1)#.sub(1).float()
-    dequantized_frame = quantized_frame.sub(1).div(2**bit_depth - 1)
+    quantized_frame = byte_frame.long().multiply(byte_depth_constants).sum(dim=-1)
+    dequantized_frame = quantized_frame.sub(1 / 2).div(2**bit_depth - 1)
     return dequantized_frame
 
 

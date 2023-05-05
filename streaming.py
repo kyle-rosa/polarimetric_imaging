@@ -17,7 +17,7 @@ def select_device_from_user_input(
     print('Camera device information:\n', pd.DataFrame(device_infos))
     selected_model = device_infos[selected_index]['model']
     print(f"\nCreate device: {selected_model}...")
-    device = arena_api.system.system.create_device(device_infos=device_infos[selected_index])[0]
+    device = arena_api.system.system.create_device(device_infos[selected_index])[0]
     return device
 
 
@@ -61,20 +61,6 @@ def run_camera(
     return device
 
 
-def auto_adjust_exposure_time(camera_device, demosaic_float):
-    current_exposure_time = camera_device.nodemap.get_node('ExposureTime').value
-    frame_rate = camera_device.nodemap.get_node('AcquisitionFrameRate').value
-    max_pixel_value = demosaic_float.max()
-    print(f'Maximum pixel value: {max_pixel_value}.')
-    if max_pixel_value > 0.95:
-        new_exposure_time = max(300.0, current_exposure_time * 0.95)
-    else:
-        new_exposure_time = min((1_000_000.0 / frame_rate * 0.95), current_exposure_time * 1.05)
-    camera_device.nodemap.get_node('ExposureTime').value = new_exposure_time
-    print(f"New exposure time: {new_exposure_time}.\n")
-    return new_exposure_time
-
-
 def get_image_buffers(
     camera_device: arena_api._device.Device,
     compute_device: torch.device
@@ -84,7 +70,7 @@ def get_image_buffers(
         buffer = camera_device.get_buffer()
         buffer_shape = (buffer.height, buffer.width, buffer.bits_per_pixel // 8)
         frame_array = np.ctypeslib.as_array(buffer.pdata, shape=buffer_shape)
-        frame_tensor = torch.from_numpy(frame_array)[None, None].to(device=compute_device)
+        frame_tensor = torch.from_numpy(frame_array)[None, None].to(compute_device)
         camera_device.requeue_buffer(buffer)
         yield frame_tensor
 
@@ -104,7 +90,6 @@ def make_display_manager(
         cv2.startWindowThread()
         cv2.namedWindow(window, cv2.WINDOW_NORMAL)
         cv2.resizeWindow(window, window_height, window_width)
-        # cv2.setWindowProperty(window, cv2.WND_PROP_FULLSCREEN, cv2.WINDOW_FULLSCREEN)
     for writer in video_writers:
         video_writers[writer] = cv2.VideoWriter(
             filename=str(output_dir / f'{writer}.mp4'), 

@@ -5,6 +5,8 @@ import torch
 from torch import Tensor
 import numpy as np
 
+from processing import apply_complex_diffusion
+
 
 def load_cyclic_colourmap(compute_device: torch.device):
     return torch.load(Path() / "data/input/cyclic_cmap.pt", map_location=compute_device)
@@ -50,7 +52,8 @@ def visualise_polarisation(
     angles_dict: dict[str, Tensor],
     stokes: dict[str, Tensor],
     cyclic_colourmap: Tensor,
-    gamma: float
+    gamma: float,
+    diffusion_multiplier: Tensor
 ):
     # Calculate (real-valued) scalar fields, with ranges in [0, 1].
     scalar_fields = {
@@ -88,7 +91,12 @@ def visualise_polarisation(
     complex_fields = {
         'L': stokes['L'],
         'ADoLP': stokes['L'].div(stokes['I'].add(1e-8)),
+        'Phase of Linear Polarisation': stokes['L'].div(stokes['L'].abs().add(1e-8)),
     }
+    complex_fields['Phase of Linear Polarisation - Diffused'] = apply_complex_diffusion(
+        complex_fields['Phase of Linear Polarisation'], 
+        diffusion_multiplier
+    )
     domain_colourings = {
         k: make_domain_colouring(
             complex_field=v,

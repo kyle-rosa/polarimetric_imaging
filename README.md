@@ -27,7 +27,6 @@ Initialise camera stream and video writer, then loop:
 # TODO
 - Replace generators with async coroutines.
 - Make compatible with torch.compile.
-- Detect and filter defective pixels.
 - Variational demosaicking.
 
 # Requirements
@@ -41,4 +40,6 @@ One of:
 - https://thinklucid.com/product/triton-5-0-mp-polarization-model-imx264mzrmyr/.
 
 # Acknowledgements:
-- Colourmaps: https://www.fabiocrameri.ch/.
+- Colourmaps:
+    - https://www.fabiocrameri.ch/.
+    - https://cgg.mff.cuni.cz/~wilkie/Website/Home_files/polvis_sccg_2010.pdf
