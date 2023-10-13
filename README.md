@@ -1,8 +1,8 @@
 # Polarimetric Imaging
 <p align="center">
-  <img src="gallery/matchbox.png?raw=truee" width="300">
-  <img src="gallery/watergun.png?raw=true" width="300">
-  <img src="gallery/glasses.png?raw=true" width="300">
+  <img src="gallery/matchbox.png?raw=truee" width="250">
+  <img src="gallery/watergun.png?raw=true" width="250">
+  <img src="gallery/glasses.png?raw=true" width="250">
 </p>
 
 This repository contains code I wrote for controlling a polarimetric machine camera, and processing its raw data into vibrant false-colour visualisations of light polarisation.
