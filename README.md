@@ -1,8 +1,13 @@
 # Polarimetric Imaging
+<p align="center">
+  <img src="gallery/matchbox.png?raw=truee" width="300">
+  <img src="gallery/watergun.png?raw=true" width="300">
+  <img src="gallery/glasses.png?raw=true" width="300">
+</p>
 
-![alt text](https://github.com/kyle-rosa/polarisation_imaging/blob/main/gallery/glasses.png?raw=true)
-![alt text](https://github.com/kyle-rosa/polarisation_imaging/blob/main/gallery/watergun.png?raw=true)
-![alt text](https://github.com/kyle-rosa/polarisation_imaging/blob/main/gallery/matchbox.png?raw=true)
+This repository contains code I wrote for controlling a polarimetric machine camera, and processing its raw data into vibrant false-colour visualisations of light polarisation.
+
+The pixels on a standard RGB camera are covered with a mosaic of differently coloured filters in order to differntiate red, blue, and green light. Similarly, a polarimetric camera works by using a mosaic of polarising filters that alternate between $0$, $45$, $90$, and $135$ degree offsets. 
 
 ## Overview
 Initialise camera stream and video writer, then loop:
@@ -25,21 +30,21 @@ Initialise camera stream and video writer, then loop:
 4. HSV-based Stokes colourmapping.
 
 # TODO
-- Replace generators with async coroutines.
-- Make compatible with torch.compile.
-- Variational demosaicking.
+1. Replace generators with async coroutines.
+2. Make compatible with torch.compile.
+3. Variational demosaicking.
 
 # Requirements
 ## Software:
-- ArenaSDK: https://thinklucid.com/downloads-hub/.
-- Arena-API Python package: https://thinklucid.com/downloads-hub/.
+1. ArenaSDK: https://thinklucid.com/downloads-hub/.
+2. Arena-API Python package: https://thinklucid.com/downloads-hub/.
 
 ## Sensors:
 One of:
-- https://thinklucid.com/product/triton-5-mp-polarization-camera/.
-- https://thinklucid.com/product/triton-5-0-mp-polarization-model-imx264mzrmyr/.
+1. https://thinklucid.com/product/triton-5-mp-polarization-camera/.
+2. https://thinklucid.com/product/triton-5-0-mp-polarization-model-imx264mzrmyr/.
 
 # Acknowledgements:
-- Colourmaps:
-    - https://www.fabiocrameri.ch/.
-    - https://cgg.mff.cuni.cz/~wilkie/Website/Home_files/polvis_sccg_2010.pdf
+1. Colourmaps:
+    1. https://www.fabiocrameri.ch/.
+    2. https://cgg.mff.cuni.cz/~wilkie/Website/Home_files/polvis_sccg_2010.pdf
